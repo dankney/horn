@@ -39,11 +39,10 @@ module baseSection (lowerCirc, upperCirc, baseHeight, wallThickness) {
 module tubeMount(innerRadius, wallThickness, mountHeight = 30) {
    difference(){
        union(){
-           //minkowski(){
+
               translate([0, 0, 5])
                 cylinder($fn = circleRes, h = mountHeight - 5, r = innerRadius + wallThickness, center = false);
-               //sphere(d = 5); //sphere is 5 in original
-            //}
+
             rotate_extrude(convexity = 10, $fn = circleRes)
                 translate([0.1,0,0])
                     polygon(points = [[innerRadius + 5 + wallThickness ,0], [0,innerRadius], [innerRadius + 5, innerRadius ]]);
@@ -115,14 +114,14 @@ module mute(){
     cylinder($fn = circleRes, h = 10, r = LowerCirc / PI / 2);
     
     translate([0,0,-5])
-        watermark(RADIUS = UpperCirc / PI / 2, RADIUS2 = LowerCirc / PI / 2, ARC_ANGLE = 160, stext = [ "d","i","y","m","u","t", "e","s",".","o","r","g", "/", "D", "e", "P", "o", "l", "i", "s" ]);
+        watermark(RADIUS = UpperCirc / PI / 2, RADIUS2 = LowerCirc / PI / 2, ARC_ANGLE = 160, stext = [ "h","o","r","n","-","m", "u","t","e","s",".","c", "o", "m" ]);
     
 }
 
 
 // There are three variations 
 // To choose which variation of the DePolis Mute to generate, set this variable
-muteVariation = "2";
+muteVariation = "3";
 
 //JR Variant
 if (muteVariation == "1") { 

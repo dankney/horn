@@ -18,13 +18,13 @@ module torus_ext() {
     // Major radius (R) = (125 + 17.5) / 4 = 35.625
     // Minor radius (r) = (125 - 17.5) / 4 = 26.875
     // Hollow torus shell = 3 mm
-    // Half-height in Z (ellipse cross-section), hole size unchanged
+    // Half-height in Z (ellipse cross-section), with slightly reduced inner Z scale for thicker top
     difference() {
         scale([1,1,0.5])
             rotate_extrude(convexity = 10, $fn = 180)
                 translate([35.625, 0, 0])
                     circle(r = 26.875, $fn = 180);
-        scale([1,1,0.5])
+        scale([1,1,0.46])
             rotate_extrude(convexity = 10, $fn = 180)
                 translate([35.625, 0, 0])
                     circle(r = 25.375, $fn = 180);
@@ -39,10 +39,22 @@ module base_section() {
 }
 
 module mute_body() {
-    difference(){
-        cylinder($fn=360, h=123.5, r1=34.25, r2=62.5, center=false);
-        cylinder($fn=360, h=123.5, r1=32.75, r2= 61, center=false);
-     }
+    h = 123.5;
+    outer_r1 = 34.5;
+    outer_r2 = 62.5;
+    inner_r1 = 32.75;
+    inner_r2 = 61;
+    curve_inset = 1.2;
+
+    outer_mid = (outer_r1 + outer_r2) / 2 - curve_inset;
+    inner_mid = (inner_r1 + inner_r2) / 2 - curve_inset;
+
+    difference() {
+        rotate_extrude(convexity = 10, $fn = 360)
+            polygon(points=[[0,0], [outer_r1,0], [outer_mid,h/2], [outer_r2,h], [0,h]]);
+        rotate_extrude(convexity = 10, $fn = 360)
+            polygon(points=[[0,0], [inner_r1,0], [inner_mid,h/2], [inner_r2,h], [0,h]]);
+    }
 }
 
 

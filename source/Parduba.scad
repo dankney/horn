@@ -1,0 +1,86 @@
+// Dependencies
+//  -- https://github.com/BelfrySCAD/BOSL2
+
+include <BOSL2/std.scad>
+include <BOSL2/threading.scad>
+
+
+// Inner Geometry
+//  AdjustableTubeLength: 100mm
+//  AdjustableTubeInternalDiameter: 38.1mm
+//  OpenEndDiameter: 27.5mm
+//  BaseDiameter: 127.5mm
+//  TotalHeight: 244.2mm
+
+CircleResolution = 360;
+WallThickness = 1;
+
+
+
+
+
+module InnerGeometry(openEndDiameter = 38.1, baseDiameter = 127.5, totalHeight = 218.56) {
+    cylinder ($fn = CircleResolution, h = totalHeight, r1 = baseDiameter / 2, r2 = openEndDiameter / 2);
+}
+
+module OuterGeometry(openEndDiameter = 38.1 + WallThickness * 2, baseDiameter = 127.5 + WallThickness * 2, totalHeight = 218.56) {
+    cylinder ($fn = CircleResolution, h = totalHeight, r1 = baseDiameter / 2, r2 = openEndDiameter / 2);
+}
+
+
+
+// Tube
+module tuningTube(tubeRadius = 19, tubeLength = 120, wallThickness = WallThickness) {
+    extDiameter = tubeRadius * 2 + 4 * WallThickness;
+    intRadius = tubeRadius;
+
+    
+    difference() {
+        union(){
+            cylinder(h=5, r1=tubeRadius, r2=tubeRadius + 6);
+            translate([0, 0, tubeLength / 2])
+                trapezoidal_threaded_rod(d=extDiameter, h=tubeLength, pitch=3);
+        }
+        cylinder(h=tubeLength, r1=intRadius, r2=intRadius, center=false);
+    }
+}
+
+// Text On Bottom
+module watermark (RADIUS, RADIUS2, ARC_ANGLE, stext) {
+    
+    chars = len( stext );
+
+    difference(){
+        cylinder($fn=circleRes, r1=RADIUS, r2= RADIUS2 + 2, h=10,center=true);
+
+        for(i=[0:1:chars]){
+          rotate([0,0,i*ARC_ANGLE/chars]){
+            translate( [RADIUS*.95,0,0])
+              rotate([90,0,90])
+                linear_extrude(7)
+                  text(stext[i],size=6, valign="center",halign="center");
+            }
+        }
+    }
+}
+
+union(){
+    difference(){
+        union(){
+            difference(){
+                OuterGeometry();
+                InnerGeometry();
+            }
+            translate([0,0,200])
+                cylinder(h=18, r=23);
+        }
+        translate([0,0,200])
+            trapezoidal_threaded_rod(d = 19.5 * 2 + 4 * WallThickness +1, l = 350, pitch = 3, internal = true);
+        
+    }
+
+    cylinder(h=5, r=63.75);
+}
+translate([0,170,0])  
+    tuningTube(19, 140, WallThickness);
+
