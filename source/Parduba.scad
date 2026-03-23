@@ -64,23 +64,26 @@ module watermark (RADIUS, RADIUS2, ARC_ANGLE, stext) {
     }
 }
 
-union(){
-    difference(){
-        union(){
-            difference(){
-                OuterGeometry();
-                InnerGeometry();
+module mute() {
+    union(){
+        difference(){
+            union(){
+                difference(){
+                    OuterGeometry();
+                    InnerGeometry();
+                }
+                translate([0,0,200])
+                    cylinder(h=18, r=23);
             }
             translate([0,0,200])
-                cylinder(h=18, r=23);
+                trapezoidal_threaded_rod(d = 19.5 * 2 + 4 * WallThickness +1, l = 350, pitch = 3, internal = true);
+            
         }
-        translate([0,0,200])
-            trapezoidal_threaded_rod(d = 19.5 * 2 + 4 * WallThickness +1, l = 350, pitch = 3, internal = true);
-        
-    }
 
-    cylinder(h=5, r=63.75);
-}
+        cylinder(h=5, r=63.75);
+    }
+}   
+ 
 translate([0,170,0])  
     tuningTube(19, 140, WallThickness);
 
