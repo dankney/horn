@@ -36,6 +36,14 @@ module MuteBody() {
         InnerTube();
 }   
 
+module MuteBodyCrossSection() {
+    intersection() {
+        MuteBody();
+        translate([0, -1000, -1])
+            cube([1000, 2000, 1000]);
+    }
+}
+
 //MuteBody();
 
 module MuteBottom() {
