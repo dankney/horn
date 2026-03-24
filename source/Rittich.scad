@@ -43,7 +43,8 @@ module MuteBodyCrossSection() {
             cube([1000, 2000, 1000]);
     }
 }
-
+MuteBodyCrossSection();
+MuteBottom();
 //MuteBody();
 
 module MuteBottom() {
@@ -73,5 +74,5 @@ module MuteBottomConcave() {
     }
 }
 
-translate([150,0,0])
-    MuteBottomConcave();
+//translate([150,0,0])
+//    MuteBottomConcave();
