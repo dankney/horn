@@ -1,0 +1,47 @@
+// This code and the rendered model are ©2025 by Don Ankney. They are licensed under Creative Commons Attribution 4.0 International. To view a copy of this license, visit https://creativecommons.org/licenses/by/4.0/
+
+// This license requires that reusers give credit to the creator. It allows reusers to distribute, remix, adapt, and build upon the material in any medium or format, even for commercial purposes.
+
+module interior() {
+  //Base Interior
+  cylinder($fn=360, h=39, r1=25.75, r2=33.25, center=false);
+  // Top Interior  
+  translate([0,0,39]) {
+    cylinder($fn=360, h=83, r1=33.25, r2=3, center=false);
+    cylinder(h=85, r1=3, r2=3, center=false);
+  }
+  //Pipe Interior
+  translate([0,0,122]){
+    cylinder($fn=360, h=34, r1=3, r2=3, center=false);
+  }
+  //Cup Interior
+  translate([0,0,156]){
+    cylinder($fn=360, h=28, r1=3, r2=33, center=false);
+  }
+}
+    
+
+module exterior() {
+    //Base section for bell insertion
+    cylinder($fn=360, h=39, r1=27.25, r2= 34.25, center=false);
+
+    //Top section placed above the base
+    translate([0,0,39]) {
+        minkowski(){
+            sphere(r=1);
+            cylinder($fn=18, h=65, r1=34.25, r2=15, center=false);
+        }
+    }
+    
+    translate([0,0,100]) {
+        minkowski(){
+            sphere(r=1);
+            cylinder ($fn=360, h=75, r1=15, r2=25, center=false);
+        }
+    }
+}
+
+difference(){
+    exterior();
+    interior();
+}

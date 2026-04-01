@@ -28,7 +28,6 @@ module OuterGeometry(openEndDiameter = 38.1 + WallThickness * 2, baseDiameter = 
 }
 
 
-
 // Tube
 module tuningTube(tubeRadius = 19, tubeLength = 120, wallThickness = WallThickness) {
     extDiameter = tubeRadius * 2 + 4 * WallThickness;
