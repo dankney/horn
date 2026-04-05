@@ -124,7 +124,7 @@ module mute(){
 muteVariation = "3";
 
 //JR Variant
-if (muteVariation == "1") { 
+if (muteVariation == "2") { 
     // Dimensions
     echo("ONE");
     VariantName = "JR Variant";

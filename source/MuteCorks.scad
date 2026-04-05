@@ -1,0 +1,76 @@
+$fn = 48;
+
+length = 100;
+width = 12;
+height = 6;
+rounding = 1;
+top_cut_diameter = 60;
+top_cut_extension = 5;
+bottom_text = "horn-mutes.com";
+bottom_text_size = 4.5;
+bottom_text_depth = 0.6;
+bottom_text_boldening = 0.2;
+
+module bottom_label(label_text, label_size, label_depth) {
+	translate([length / 2, 0, -0.01])
+		linear_extrude(height = label_depth + 0.02)
+			mirror([1, 0, 0])
+				offset(delta = bottom_text_boldening)
+					text(label_text, size = label_size, halign = "center", valign = "center");
+}
+
+module bottom_rounded_profile(profile_width, profile_height, radius) {
+	union() {
+		translate([0, radius])
+			square([profile_width, profile_height - radius]);
+		translate([radius, 0])
+			square([profile_width - 2 * radius, radius]);
+		translate([radius, radius])
+			circle(r = radius);
+		translate([profile_width - radius, radius])
+			circle(r = radius);
+	}
+}
+
+module end_cap(cap_length, profile_width, profile_height, radius) {
+	hull() {
+		translate([cap_length, 0, 0])
+			rotate([90, 0, 90])
+				linear_extrude(height = 0.01)
+					bottom_rounded_profile(profile_width, profile_height, radius);
+
+		rotate([90, 0, 90])
+			linear_extrude(height = 0.01)
+				offset(delta = -radius / 2)
+					bottom_rounded_profile(profile_width, profile_height, radius);
+	}
+}
+
+module mute_cork(bar_length = length, bar_width = width, bar_height = height, radius = rounding) {
+	top_cut_radius = top_cut_diameter / 2;
+	top_cut_center_z = bar_height + sqrt(top_cut_radius * top_cut_radius - (bar_width / 2) * (bar_width / 2));
+
+	difference() {
+		union() {
+			translate([radius, -bar_width / 2, 0])
+				rotate([90, 0, 90])
+					linear_extrude(height = bar_length - 2 * radius)
+						bottom_rounded_profile(bar_width, bar_height, radius);
+
+			translate([0, -bar_width / 2, 0])
+				end_cap(radius, bar_width, bar_height, radius);
+
+			translate([bar_length, -bar_width / 2, 0])
+				mirror([1, 0, 0])
+					end_cap(radius, bar_width, bar_height, radius);
+		}
+
+			translate([-top_cut_extension, 0, top_cut_center_z])
+				rotate([0, 90, 0])
+					cylinder(h = bar_length + 2 * top_cut_extension, d = top_cut_diameter);
+
+		bottom_label(bottom_text, bottom_text_size, bottom_text_depth);
+	}
+}
+
+mute_cork();
