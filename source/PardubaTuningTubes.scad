@@ -28,20 +28,20 @@ module tuningTube(tubeRadius = tubeRadius, tubeLength = tubeHeight, wallThicknes
     
 
 
-tuningTube();
+tuningTube(tubeRadius, 155, wallThickness);
 
 translate([0, 60, 0])
-    tuningTube(tubeRadius, 150, wallThickness);
+    tuningTube(tubeRadius, 155, wallThickness);
 
 
 translate([60, 0, 0])
     tuningTube(tubeRadius, 155, wallThickness);
 
 translate([60, 60, 0])
-    tuningTube(tubeRadius, 160, wallThickness);
+    tuningTube(tubeRadius, 155, wallThickness);
     
  translate([0, 120, 0])
-    tuningTube(tubeRadius, 135, wallThickness);
+    tuningTube(tubeRadius, 155, wallThickness);
     
      translate([120, 0, 0])
-    tuningTube(tubeRadius, 130, wallThickness);
+    tuningTube(tubeRadius, 155, wallThickness);

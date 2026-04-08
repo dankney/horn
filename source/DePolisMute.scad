@@ -70,7 +70,7 @@ module topSection (baseC, topD, topHeight, wallThickness) {
 
 // Tube
 module tuningTube(tubeRadius, tubeLength) {
-    ExtDiameter = tubeRadius * 2 - 2;
+    ExtDiameter = tubeRadius * 2;
     IntRadius = tubeRadius - 4;
 
     

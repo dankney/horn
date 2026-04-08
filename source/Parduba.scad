@@ -29,17 +29,18 @@ module OuterGeometry(openEndDiameter = 38.1 + WallThickness * 2, baseDiameter = 
 
 
 // Tube
-module tuningTube(tubeRadius = 19, tubeLength = 120, wallThickness = WallThickness) {
-    extDiameter = tubeRadius * 2 + 4 * WallThickness;
-    intRadius = tubeRadius;
+module tuningTube(tubeRadius = 19, tubeLength = 150, wallThickness = 2) {
+    extDiameter = (tubeRadius * 2) + (2 * wallThickness);
+    intRadius = tubeRadius - 2;
 
     
     difference() {
-        union(){
-            cylinder(h=5, r1=tubeRadius, r2=tubeRadius + 6);
-            translate([0, 0, tubeLength / 2])
-                trapezoidal_threaded_rod(d=extDiameter, h=tubeLength, pitch=3);
-        }
+            union(){
+                cylinder(h=5, r1=tubeRadius, r2=tubeRadius + 6);
+                translate([0, 0, tubeLength - (tubeLength / 1.45)])
+                    trapezoidal_threaded_rod(d=extDiameter, h=tubeLength/2, pitch=3);
+                cylinder(h=tubeLength, d=extDiameter-3);
+            }
         cylinder(h=tubeLength, r1=intRadius, r2=intRadius, center=false);
     }
 }
@@ -82,7 +83,7 @@ module mute() {
         cylinder(h=5, r=63.75);
     }
 }   
- 
+ mute();
 translate([0,170,0])  
-    tuningTube(19, 140, WallThickness);
+    tuningTube(19, 155, WallThickness);
 
