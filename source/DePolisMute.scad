@@ -77,13 +77,14 @@ module tuningTube(tubeRadius, tubeLength) {
     difference() {
         union(){
            
-            cylinder(h=5, r1=ExtDiameter / 2, r2=ExtDiameter / 2 + 4);
-            translate([0, 0, tubeLength / 2])
-                trapezoidal_threaded_rod(d=ExtDiameter, h=tubeLength, pitch=3);
+            cylinder(h=5, r1=ExtDiameter / 2, r2=ExtDiameter / 2 + 4); // Flared end to make it easier to insert into the mute
+            translate([0, 0, tubeLength/2] )
+                trapezoidal_threaded_rod(d=IntRadius*2, h=tubeLength, pitch=3);
         }
-        cylinder(h=tubeLength, r1=IntRadius, r2=IntRadius, center=false);
+        cylinder(h=tubeLength, r=IntRadius-2, center=false);
     }
 }
+
 
 // Text On Bottom
 module watermark (RADIUS, RADIUS2, ARC_ANGLE, stext) {
@@ -187,4 +188,7 @@ if (muteVariation == "3") {
     mute();
     translate([LowerCirc / PI, LowerCirc / PI, - 10])
         tuningTube(TubeRadius, TubeHeight);
+
+        
 }
+
