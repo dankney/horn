@@ -16,12 +16,13 @@ include <BOSL2/threading.scad>
     UpperCirc = 310;
     BaseHeight = 65;
     TipExtD = 40;
-    TipIntD = 30;  
+    TipIntD = 30;
     TubeRadius = 20;
     TubeHeight = 150;
     TotalHeight = 195;
     tubeMountHeight = 30;
     wallThickness = 2;
+    threadClearance = 1.0; // diametral gap between tube thread and mount opening; printed trapezoidal threads need ~0.5mm radial to assemble
     circleRes = 360;
 
 // Base Section
@@ -55,33 +56,53 @@ module tubeMount(innerRadius, wallThickness, mountHeight = 30) {
 }
 
 // Top Section with Tube Mount
-module topSection (baseC, topD, topHeight, wallThickness) {
+module topSection (baseC, topD, topHeight, wallThickness, tubeRadius, tubeMountHeight) {
     baseR = baseC / PI / 2;
     topR = topD / 2;
 
-    
+    // Minor (crest) radius of the mount's internal thread; pitch=3 -> depth=pitch/2.
+    threadMinorR = tubeRadius - 3/2;
+    mountOuterR = tubeRadius + wallThickness;
+    // Lead-in chamfer height at the very top of the bore. Kept small enough that the bevel
+    // stays inside mountOuterR and leaves a solid rim.
+    bevelHeight = 2;
+
     difference() {
-        cylinder ($fn = circleRes, h = topHeight, r1 = baseR + wallThickness, r2 = topR + wallThickness);
-        cylinder ($fn = circleRes, h = topHeight, r1 = baseR, r2 = topR);
+        union() {
+            // Mute wall (hollow cone). The wall tapers narrower than the mount near the tip;
+            // without intervention it interpenetrates the threads, which both pinched the bore
+            // and left non-manifold grazing edges. Carve a clean cylindrical pocket (just inside
+            // the mount's outer radius so they still overlap) to keep the wall off the threads.
+            difference() {
+                cylinder ($fn = circleRes, h = topHeight, r1 = baseR + wallThickness, r2 = topR + wallThickness);
+                cylinder ($fn = circleRes, h = topHeight, r1 = baseR, r2 = topR);
+                translate([0, 0, topHeight - tubeMountHeight - 0.01])
+                    cylinder ($fn = circleRes, h = tubeMountHeight + 1, r = mountOuterR - 0.5);
+            }
+            translate([0, 0, topHeight - tubeMountHeight])
+                tubeMount(tubeRadius, wallThickness, tubeMountHeight);
+        }
+        // Lead-in bevel: widen the bore from the top of the threading out to the very top
+        // so the tube starts easily. Overshoots past the top face for a clean cut.
+        translate([0, 0, topHeight - bevelHeight])
+            cylinder ($fn = circleRes, h = bevelHeight + 1,
+                      r1 = threadMinorR + 0.2, r2 = threadMinorR + 0.2 + bevelHeight + 1);
     }
-    translate([0, 0, topHeight - tubeMountHeight])
-        tubeMount(TubeRadius, wallThickness, tubeMountHeight);     
 }
 
 // Tube
-module tuningTube(tubeRadius, tubeLength) {
-    ExtDiameter = tubeRadius * 2;
-    IntRadius = tubeRadius - 4;
+module tuningTube(tubeRadius, tubeLength, wallThickness) {
+    extDiameter = tubeRadius * 2 + 4 * wallThickness;
+    intRadius = tubeRadius;
 
-    
     difference() {
         union(){
-           
-            cylinder(h=5, r1=ExtDiameter / 2, r2=ExtDiameter / 2 + 4); // Flared end to make it easier to insert into the mute
-            translate([0, 0, tubeLength/2] )
-                trapezoidal_threaded_rod(d=IntRadius*2, h=tubeLength, pitch=3);
+            cylinder(h=5, r1=tubeRadius, r2=tubeRadius + 6); // Flared end to make it easier to insert into the mute
+            translate([0, 0, tubeLength - (tubeLength / 1.5)])
+                trapezoidal_threaded_rod(d=extDiameter, h=tubeLength/2, pitch=3);
+            cylinder(h=tubeLength, d=extDiameter-3);
         }
-        cylinder(h=tubeLength, r=IntRadius-2, center=false);
+        cylinder(h=tubeLength, r1=intRadius, r2=intRadius, center=false);
     }
 }
 
@@ -106,17 +127,17 @@ module watermark (RADIUS, RADIUS2, ARC_ANGLE, stext) {
 }
 
 // Mute Body Assembly
-module mute(){
-    translate([0, 0,  BaseHeight])
-        topSection(UpperCirc, TipExtD, TotalHeight - BaseHeight, wallThickness);
-    
-    baseSection(LowerCirc, UpperCirc, BaseHeight, wallThickness);
-    
-    cylinder($fn = circleRes, h = 10, r = LowerCirc / PI / 2);
-    
+module mute(lowerCirc, upperCirc, baseHeight, tipExtD, totalHeight, wallThickness, tubeRadius, tubeMountHeight){
+    translate([0, 0,  baseHeight])
+        topSection(upperCirc, tipExtD, totalHeight - baseHeight, wallThickness, tubeRadius, tubeMountHeight);
+
+    baseSection(lowerCirc, upperCirc, baseHeight, wallThickness);
+
+    cylinder($fn = circleRes, h = 10, r = lowerCirc / PI / 2);
+
     translate([0,0,-5])
-        watermark(RADIUS = UpperCirc / PI / 2, RADIUS2 = LowerCirc / PI / 2, ARC_ANGLE = 160, stext = [ "h","o","r","n","-","m", "u","t","e","s",".","c", "o", "m" ]);
-    
+        watermark(RADIUS = upperCirc / PI / 2, RADIUS2 = lowerCirc / PI / 2, ARC_ANGLE = 160, stext = [ "h","o","r","n","-","m", "u","t","e","s",".","c", "o", "m" ]);
+
 }
 
 
@@ -141,9 +162,9 @@ if (muteVariation == "2") {
     wallThickness = 2;
     circleRes = 360;
     // Render Mute
-    mute();
+    mute(LowerCirc, UpperCirc, BaseHeight, TipExtD, TotalHeight, wallThickness, TubeRadius, tubeMountHeight);
     translate([LowerCirc / PI, LowerCirc / PI, - 10])
-        tuningTube(TubeRadius, TubeHeight);
+        tuningTube(TubeRadius - 2 * wallThickness - threadClearance / 2, TubeHeight, wallThickness);
 } else
 
 // DW Variant
@@ -164,9 +185,9 @@ if (muteVariation == "2") {
     circleRes = 360;
     
     // Render Mute
-    mute();
+    mute(LowerCirc, UpperCirc, BaseHeight, TipExtD, TotalHeight, wallThickness, TubeRadius, tubeMountHeight);
     translate([LowerCirc / PI, LowerCirc / PI, - 10])
-        tuningTube(TubeRadius, TubeHeight);
+        tuningTube(TubeRadius - 2 * wallThickness - threadClearance / 2, TubeHeight, wallThickness);
 } else
 
 // HB Variant
@@ -185,9 +206,9 @@ if (muteVariation == "3") {
     circleRes = 360;
     
     // Render Mute
-    mute();
+    mute(LowerCirc, UpperCirc, BaseHeight, TipExtD, TotalHeight, wallThickness, TubeRadius, tubeMountHeight);
     translate([LowerCirc / PI, LowerCirc / PI, - 10])
-        tuningTube(TubeRadius, TubeHeight);
+        tuningTube(TubeRadius - 2 * wallThickness - threadClearance / 2, TubeHeight, wallThickness);
 
         
 }
