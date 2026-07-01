@@ -18,12 +18,61 @@ bottom_text_size = 4.5;
 bottom_text_depth = 0.6;
 bottom_text_boldening = 0.2;
 
+// Diamond knurl grip texture, engraved into the labeled face around the text.
+// The cork prints upside down (labeled face up), so these grooves open upward and
+// print without support, exactly like the engraved text.
+knurl_pitch = 2.2;          // spacing between adjacent grooves
+knurl_groove = 0.7;         // groove width
+knurl_depth = 0.5;          // engraved depth (< text depth so the text stays distinct)
+knurl_edge_margin = 1.2;    // keep the knurl off the rounded long edges
+knurl_text_clear = 1.6;     // clear border kept around the text
+
 module bottom_label(label_text, label_size, label_depth) {
 	translate([length / 2, 0, -0.01])
 		linear_extrude(height = label_depth + 0.02)
 			mirror([1, 0, 0])
 				offset(delta = bottom_text_boldening)
 					text(label_text, size = label_size, halign = "center", valign = "center");
+}
+
+// 2D outline of the label text (no boldening), used to mask the knurl away from the text.
+module label_outline(label_text, label_size) {
+	translate([length / 2, 0])
+		mirror([1, 0, 0])
+			text(label_text, size = label_size, halign = "center", valign = "center");
+}
+
+// Area of the labeled face that should receive the knurl: inset from the edges, minus the text.
+module knurl_region() {
+	half_w = width / 2 - knurl_edge_margin;
+	difference() {
+		translate([knurl_edge_margin, -half_w])
+			square([length - 2 * knurl_edge_margin, 2 * half_w]);
+		offset(delta = knurl_text_clear + bottom_text_boldening)
+			label_outline(bottom_text, bottom_text_size);
+	}
+}
+
+// One set of parallel grooves at the given angle, wide enough to cover the whole face.
+module knurl_lines(angle) {
+	span = length + width;
+	n = ceil(span / knurl_pitch);
+	translate([length / 2, 0])
+		rotate(angle)
+			for (i = [-n : n])
+				translate([i * knurl_pitch, 0])
+					square([knurl_groove, 2 * span], center = true);
+}
+
+// Diamond crosshatch clipped to the knurl region, as a shallow cutter engraved into the
+// labeled face (z = 0). Overshoots below the face for a clean cut.
+module knurl_cutter() {
+	translate([0, 0, -0.01])
+		linear_extrude(height = knurl_depth + 0.01)
+			intersection() {
+				union() { knurl_lines(45); knurl_lines(-45); }
+				knurl_region();
+			}
 }
 
 module bottom_rounded_profile(profile_width, profile_height, radius) {
@@ -77,6 +126,8 @@ module mute_cork(bar_length = length, bar_width = width, bar_height = height, ra
 					cylinder(h = bar_length + 2 * top_cut_extension, d = top_cut_diameter);
 
 		bottom_label(bottom_text, bottom_text_size, bottom_text_depth);
+
+		knurl_cutter();
 	}
 }
 
