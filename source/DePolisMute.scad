@@ -67,7 +67,18 @@ module topSection (baseC, topD, topHeight, wallThickness, tubeRadius, tubeMountH
     // stays inside mountOuterR and leaves a solid rim.
     bevelHeight = 2;
 
+    // Height at which the wall's outer cone has narrowed to the mount's outer radius. Below
+    // this the wall is wider than the mount; above it the mount stands proud. The mount's own
+    // flare used to bulge past the wall here, leaving a raised ring with a flat, downward-facing
+    // underside (an unsupported arch that prints badly). Clip the mount flush to the wall so the
+    // outer surface stays a continuous cone, then a plain vertical collar where the wall is
+    // narrower than the mount -- no ledge, no overhang.
+    wallOuterBase = baseR + wallThickness;
+    wallOuterTop = topR + wallThickness;
+    crossH = (mountOuterR - wallOuterBase) / (wallOuterTop - wallOuterBase) * topHeight;
+
     difference() {
+        intersection() {
         union() {
             // Mute wall (hollow cone). The wall tapers narrower than the mount near the tip;
             // without intervention it interpenetrates the threads, which both pinched the bore
@@ -81,6 +92,16 @@ module topSection (baseC, topD, topHeight, wallThickness, tubeRadius, tubeMountH
             }
             translate([0, 0, topHeight - tubeMountHeight])
                 tubeMount(tubeRadius, wallThickness, tubeMountHeight);
+        }
+        // Outer envelope: the wall cone up to where it meets the mount, then a vertical collar.
+        // Anything the mount flares beyond this (the old ring) gets shaved off flush. The small
+        // margins keep the wall/collar surfaces themselves untouched (no coincident-face slivers).
+        union() {
+            cylinder ($fn = circleRes, h = topHeight,
+                      r1 = wallOuterBase + 0.01, r2 = wallOuterTop + 0.01);
+            translate([0, 0, crossH])
+                cylinder ($fn = circleRes, h = topHeight - crossH + 1, r = mountOuterR + 0.01);
+        }
         }
         // Lead-in bevel: widen the bore from the top of the threading out to the very top
         // so the tube starts easily. Overshoots past the top face for a clean cut.
