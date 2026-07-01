@@ -90,5 +90,5 @@ module mute() {
 }   
  mute();
 translate([0,170,0])  
-    tuningTube(19, 155, WallThickness);
+    tuningTube(19.9, 155, WallThickness);
 
