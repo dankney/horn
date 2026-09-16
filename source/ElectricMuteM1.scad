@@ -34,8 +34,13 @@ include <BOSL2/threading.scad>
     renderPart     = "layout";      // "layout" (all 3 pieces on the plate) | "assembled" | "body" | "cap" | "tube"
     capFloorZ      = 10;            // cavity-floor height (matches the original base disk); joint stays below this
     capThreadH     = 8;             // thread engagement height (< capFloorZ)
-    capThreadPitch = 3;             // base-cap thread pitch
-    capClear       = 1.0;           // diametral clearance between cap and body threads
+    capThreadPitch = 4;             // base-cap thread pitch. Coarse on purpose: deeper threads are far
+                                    // more tolerant of FDM warp/first-layer squish on this ~Ø99 mm joint
+                                    // and are much easier to start than the original fine pitch-3 thread.
+    capClear       = 1.4;           // diametral thread clearance = 0.7 mm radial. Deliberately loose so the
+                                    // joint still assembles after print warp + elephant's-foot on the big
+                                    // threads. The cap is located and sealed by the seated bottom face, not
+                                    // the threads, so loose threads cost nothing. Raise this if it still binds.
 
 // Base Section
 module baseSection (lowerCirc, upperCirc, baseHeight, wallThickness) {
@@ -202,6 +207,10 @@ module mute(lowerCirc, upperCirc, baseHeight, tipExtD, totalHeight, wallThicknes
     innerFloorR = lowerR - (lowerR - upperR) * capFloorZ / baseHeight;   // inner-cone radius at the floor
     threadMajR  = innerFloorR - 2;                                       // male crest radius (female is capClear larger)
 
+    // Open bore radius = the female thread's minor (crest) radius; the cap's central plug is
+    // sized just under this so it passes up through the collar.
+    boreR = threadMajR + capClear / 2 - capThreadPitch / 2;
+
     difference() {
         union() {
             translate([0, 0, baseHeight])
@@ -209,14 +218,31 @@ module mute(lowerCirc, upperCirc, baseHeight, tipExtD, totalHeight, wallThicknes
 
             baseSection(lowerCirc, upperCirc, baseHeight, wallThickness);
 
-            // Solid collar carrying the internal thread. Stops below the cavity floor.
-            cylinder($fn = circleRes, h = capThreadH, r = coneOuter);
+            // Solid base fill up to the cavity floor (capFloorZ), out to the inner cone (lowerR);
+            // baseSection supplies the wall. This mirrors the PracticeMute's solid base disk. The
+            // center is opened below for the threaded joint, leaving an outer floor RING that
+            // reaches the wall -- so the assembled interior floor is identical to the one-piece
+            // mute, while the cap's central plug completes the floor from the bore inward.
+            cylinder($fn = circleRes, h = capFloorZ, r = lowerR);
         }
 
-        // Female thread (the tap is a solid rod, so this also opens the bore).
+        // Open the center above the threads: a smooth pilot bore from the top of the thread up to
+        // the floor, so the cap's plug can seat and the outer ring is all that remains of the floor.
+        translate([0, 0, capThreadH])
+            cylinder($fn = circleRes, h = capFloorZ - capThreadH + 0.01, r = boreR);
+
+        // Female thread (the tap is a solid rod, so this also opens the threaded part of the bore).
         translate([0, 0, capThreadH / 2])
             trapezoidal_threaded_rod(d = 2 * threadMajR + capClear, l = capThreadH + 2,
                                      pitch = capThreadPitch, internal = true, $fn = circleRes);
+
+        // Lead-in countersink at the mouth: a short funnel that widens the very bottom of the bore so
+        // the cap self-centers and the first thread catches, instead of two blunt thread ends butting.
+        // Only the first ~half turn at the rim is removed. (The cap's plug already pilots the top end.)
+        translate([0, 0, -0.01])
+            cylinder($fn = circleRes, h = capThreadPitch,
+                     r1 = threadMajR + capClear / 2 + 1.5,
+                     r2 = threadMajR + capClear / 2);
     }
 }
 
@@ -239,10 +265,14 @@ module baseCap(lowerCirc, upperCirc, baseHeight, wallThickness) {
             translate([0, 0, capThreadH / 2])
                 trapezoidal_threaded_rod(d = 2 * threadMajR, l = capThreadH, pitch = capThreadPitch, $fn = circleRes);
 
-            // Floor fill: widens from the thread up to the original disk-top radius, rebuilding the
-            // cavity floor at capFloorZ so the assembled interior matches the one-piece mute.
+            // Central floor plug: completes the cavity floor at capFloorZ from the bore inward.
+            // Its radius is the male thread's root (threadMajR - pitch/2), just under the collar
+            // bore, so the cap screws UP through the threads and the plug seats level with the
+            // body's outer floor ring. The two meet at the bore radius to form one continuous
+            // floor at capFloorZ, identical to the one-piece PracticeMute's base disk.
+            floorFillR = threadMajR - capThreadPitch / 2;   // clears the female thread crests
             translate([0, 0, capThreadH])
-                cylinder($fn = circleRes, h = capFloorZ - capThreadH, r1 = threadMajR, r2 = innerFloorR);
+                cylinder($fn = circleRes, h = capFloorZ - capThreadH, r = floorFillR);
         }
 
         // Vertical vents straight up through the cap into the cavity (see PracticeMute).
