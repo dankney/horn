@@ -6,14 +6,18 @@
 // fused into its BASE. A separate, externally-threaded TuningTube screws up into that nut
 // and telescopes downward, extending the column by up to 50mm.
 //
+// The body prints tip-down (apex on the bed) so the fixed tube hangs off the cone wall junction
+// rather than floating; the collar is therefore bevelled into the tube wall, not stepped.
+//
 // The nut sits at the base (not the tip) so that as the TuningTube is unscrewed downward
 // its threaded shank feeds into the open interior below the fixed tube -- a nut at the tip
 // would jam the thread against the narrow bore. The threads themselves are the retention
 // mechanism: the thread's lead angle (~1.5 deg) is far below the PLA-on-PLA friction angle
 // (~17 deg), so the joint is strongly self-locking -- the TuningTube stays wherever it is set
-// and moves only when turned. A plain collar at each end of the threaded shank hard-limits the
-// travel to exactly 0..MaxExtension, so the tube can neither be unscrewed free into the sealed
-// mute nor screwed up past the nut and trapped in the fixed tube.
+// and moves only when turned. A collar below the thread stops it being wound up past the nut and
+// trapped, and the thread is run long enough that it cannot reach the end of its travel -- so the
+// tube can never drop free into the sealed mute. See TuningTube for why no collar above the
+// thread is possible.
 //
 // The TuningTube is installed before the mute bottom is glued. Tuning after assembly is done
 // through the top hole with a long driver engaging the notches in the TuningTube's drive stem.
@@ -44,16 +48,22 @@ FixedTubeBaseZ  = TubeTopZ - FixedTubeHeight;      // 98.559
 // --- Telescoping tuning mechanism (BOSL2 trapezoidal thread) ---
 ThreadPitch     = 3;
 ThreadRootR     = TubeInnerRadius;                 // internal-thread root radius in the nut
-ThreadClearance = 1.0;                             // diametral clearance (matches DePolisMute)
-MaxExtension    = 50;                              // max downward reach past the fixed tube base
+ThreadClearance = 1.6;                             // diametral clearance, applied to the tuning tube only
+                                                   // (1.0 printed too tight: only ~0.13mm per flank)
+MaxExtension    = 50;                              // preview figure only -- the tube itself reaches
+                                                   // the mute bottom at 92.1mm, see TuningTube
 NutHeight       = 25;                              // internally-threaded collar at the tube base
 NutOuterR       = 23;                              // shell around the internal thread
+NutBevelAngle   = 35;                              // collar-to-wall taper, degrees from vertical
 
 // --- Tuning tube (separate printed part) ---
 TuneWall        = 2;
 TuneStemLen     = 8;                               // plain drive stem above the thread
 TuneDriveNotch  = 3;                               // notch width for a spanner/driver
-TuneStopHeight  = 3;                               // travel-stop collar at each end of the shank
+TuneStopHeight  = 1.5;                             // up-stop collar under the thread -- kept thin,
+                                                   // since it sets the shortest column (121.5mm)
+TuneThreadLen   = 100;                             // full nut engagement to +2in (196.5mm column),
+                                                   // still captive when resting on the mute bottom
 
 
 module InnerGeometry(openEndDiameter = 27.5, baseDiameter = 127.5, totalHeight = 244.2) {
@@ -71,12 +81,20 @@ module OuterGeometry(openEndDiameter = 27.5 + WallThickness * 2, baseDiameter = 
 module InnerTube(baseZ = FixedTubeBaseZ, height = FixedTubeHeight, innerRadius = TubeInnerRadius, wallThickness = TubeWall) {
     outerRadius = innerRadius + wallThickness;
 
+    // The body prints tip-down, so model-z runs downward through the printer: the collar's
+    // step out from the tube wall to NutOuterR would land as a flat, downward-facing annular
+    // ledge -- an unsupported arch. Taper it instead, at NutBevelAngle from vertical.
+    bevelHeight = (NutOuterR - outerRadius) / tan(NutBevelAngle);
+
     difference() {
         union() {
-            // plain wall above the nut
+            // plain wall above the nut, blended down onto the collar by a conical bevel
             translate([0, 0, baseZ + NutHeight])
                 difference() {
-                    cylinder ($fn = CircleResolution, h = height - NutHeight, r = outerRadius);
+                    union() {
+                        cylinder ($fn = CircleResolution, h = height - NutHeight, r = outerRadius);
+                        cylinder ($fn = CircleResolution, h = bevelHeight, r1 = NutOuterR, r2 = outerRadius);
+                    }
                     translate([0, 0, -0.1])
                         cylinder ($fn = CircleResolution, h = height - NutHeight + 0.2, r = innerRadius);
                 }
@@ -131,47 +149,42 @@ module InnerTubeReinforcement(tubeBaseZ = FixedTubeBaseZ, tubeHeight = FixedTube
 // angle, well inside the ~17 deg PLA-on-PLA friction angle, so the tube is strongly self-locking.
 // It holds any position against gravity and playing vibration and moves only when turned.
 //
-// Travel stops: a plain collar at each end of the threaded shank bounds the travel to exactly
-// 0..MaxExtension. Neither collar ever has to pass through the nut, so both are compatible with
-// bottom-up installation.
-//  -- bottom collar (botStopR, wider than the nut crest) seats on the nut's underside at
-//     extension 0. Without it the tube can be wound up clear of the nut, where its thread is too
-//     wide to fall back through -- trapped inside the fixed tube of a glued-shut mute.
-//  -- top collar (topStopR, at the thread major diameter but unthreaded, so it cannot thread
-//     through) lands on the nut's top face at MaxExtension. Without it the thread keeps feeding
-//     out for another NutHeight of travel and the tube drops free into the sealed mute.
+// Why there is no collar at the top. The tube installs from inside the open mute base, moving up:
+// the drive stem enters the nut first, then the threaded shank screws in behind it. So everything
+// above the thread has to pass clean through the nut, and the nut's narrowest point is its thread
+// crest (nutCrestR). Any unthreaded feature above the thread wider than that jams against the nut
+// before the thread can engage and the tube can never be fitted -- which rules out a hard
+// down-stop on the tube entirely. The stem is deliberately kept under nutCrestR for this reason.
 //
-// Installation (before the mute bottom is glued): the tube enters the open base of the mute
-// drive-stem-first. The stem is narrower than the nut crest, so it slips up through the nut; the
-// threaded shank then screws in behind it until the bottom collar seats at extension 0.
-//
-// Note the retracted open end sits TuneStopHeight below the fixed tube base -- the collar's own
-// thickness -- so the column runs 123mm retracted to 173mm extended.
+// Travel limits, given that:
+//  -- UP (extension 0): a collar below the thread seats on the nut's underside. It never has to
+//     pass through the nut, so it is safe. Without it the tube can be wound up clear of the nut,
+//     where its thread is too wide to fall back through -- trapped inside a glued-shut mute.
+//  -- DOWN: handled by thread length rather than a stop. The thread is longer than the tube can
+//     physically travel: the bottom collar reaches the glued mute bottom at 92.1mm of extension
+//     with 7.9mm of thread still inside the nut.
+//     The thread cannot run out, so the tube cannot drop free into the sealed mute. Over-extending
+//     past MaxExtension is possible but self-correcting -- it just bottoms out, and screws back.
 module TuningTube() {
     extMajorD  = 2 * ThreadRootR - ThreadClearance;      // external thread major diameter
-    threadLen  = MaxExtension + NutHeight;               // keeps the nut fully engaged over travel
     nutCrestR  = ThreadRootR - ThreadPitch / 2;          // innermost radius of the nut thread
     stemOuterR = nutCrestR - 0.5;                        // clears the nut crest so it passes through
     bore       = stemOuterR - TuneWall;
-    topStopR   = extMajorD / 2;                          // unthreaded -> cannot follow the thread
     botStopR   = NutOuterR - 2;                          // seats flat on the nut's underside
+    threadLen  = TuneThreadLen;
     threadZ    = TuneStopHeight;
-    stopZ      = threadZ + threadLen;
-    stemZ      = stopZ + TuneStopHeight;
+    stemZ      = threadZ + threadLen;
     totalLen   = stemZ + TuneStemLen;
 
     difference() {
         union() {
-            // bottom travel stop -- seats on the nut underside at extension 0
+            // up-stop -- seats on the nut underside at extension 0
             cylinder ($fn = CircleResolution, h = TuneStopHeight, r = botStopR);
             // external threaded shank
             translate([0, 0, threadZ])
                 trapezoidal_threaded_rod(d = extMajorD, l = threadLen, pitch = ThreadPitch,
                                          anchor = BOTTOM, $fn = CircleResolution);
-            // top travel stop -- lands on the nut top face at MaxExtension
-            translate([0, 0, stopZ])
-                cylinder ($fn = CircleResolution, h = TuneStopHeight, r = topStopR);
-            // plain drive stem
+            // plain drive stem -- must stay under nutCrestR so it passes the nut on installation
             translate([0, 0, stemZ])
                 cylinder ($fn = CircleResolution, h = TuneStemLen, r = stemOuterR);
         }
